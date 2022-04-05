@@ -23,15 +23,11 @@ static const char S_SFXS[] = {'y', 'M', 'w', 'd', 'h', 'm', 's'};
  */
 static bool s_tostr(long double s, str *dst)
 {
-        dst->len = 0;
-        /* Obtain whole number of years/months/weeks/days/hours/minutes 
-         * from s and print to dst with correct suffix if non-zero.
-         */
-        for (int i = 0; i < LEN(S_VALS)-1; i++) {
-                uintmax_t x = s/S_VALS[i];
-		s = fmodl(s, S_VALS[i]);
+        dst->len = 0; 
+        for (size_t i = 0; i < LEN(S_VALS)-1; i++) {
+                uintmax_t x = s/S_VALS[i]; s = fmodl(s, S_VALS[i]);
                 if (x) {
-                        /* Determine bytes needed to convert x to string */
+                        /* Determine space needed to print to dst */
                         int n = snprintf(NULL, 0, "%ju%c ", x, S_SFXS[i]) + 1;
                         if (n < 0 || !str_reserve(dst, dst->len+n))
                                 return false;
@@ -50,7 +46,7 @@ static bool s_tostr(long double s, str *dst)
 /* If c is in S_SFXS, return its index, else return -1 */
 static inline int isfx(char c)
 {
-        for (int i = 0; i < LEN(S_SFXS); i++)
+        for (size_t i = 0; i < LEN(S_SFXS); i++)
                 if (c == S_SFXS[i])
                         return i;
         return -1;
@@ -61,17 +57,15 @@ static long double s_frmstr(const char *restrict src, size_t len)
 {
         long double s = 0;
         while (len-->0) { /* As unit is designated by suffix, iterate backwards */
-                const char ci = isfx(src[len]), *restrict cp = src+len;
+                int ci = isfx(src[len]);
                 if (ci < 0) /* Non-suffix char, input is invalid */
                         return NAN;
                 else {
-                        for(; len && isfx(src[len-1]) < 0; len--) /* Rewind to start of value */
+                        const char *restrict cp = src+len;
+			for(; len && isfx(src[len-1]) < 0; len--) /* Rewind to start of value */
                                 ;
                         char *ep;
-                        s += strtold(src+len, &ep) * S_VALS[ci];
-                        /* strtold() must stop only at suffix, must return a finite value,
-                         * and musn't set errno, else value is invalid.
-                         */
+			s += strtold(src+len, &ep) * S_VALS[ci];
                         if (ep != cp || !isfinite(s) || errno == ERANGE)
                                 return NAN;
                 }
@@ -85,7 +79,7 @@ int main(int argc, char **argv)
         if (argc == 2) {
                 char *e;
                 long double s = strtold(argv[1], &e); /* Assume argument is numerical */
-                if (*e) { /* Conversion failed, Convert time units to seconds */ 
+                if (*e) { /* Not numerical, may be in time units */ 
                         s = s_frmstr(argv[1], strlen(argv[1]));
                         if (isnan(s))
                                 fprintf(stderr, "Error : Invalid argument.\n");
@@ -93,7 +87,7 @@ int main(int argc, char **argv)
                                 printf("%Lgs\n", s), ret = EXIT_SUCCESS;
                 } else if (!isfinite(s) || errno == ERANGE)
                         fprintf(stderr, "Error : Argument out of valid range.\n");
-                else { /* Conversion successful, convert seconds to time units */
+                else { /* Is numerical, convert seconds to time units */
                         str buf = {0};
                         if (!s_tostr(s, &buf))
                                 fprintf(stderr, "Error : Couldn't convert.\n");
