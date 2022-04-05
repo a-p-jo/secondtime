@@ -2,13 +2,13 @@
 #include <stdio.h>  /* stderr, snprintf(), fprintf(), printf() */
 #include <errno.h>  /* errno, ERANGE */
 #include <stdlib.h> /* exit(), EXIT_FAILURE, EXIT_SUCCESS */
-#include <stdint.h> /* uintmax_t */
+#include <stdint.h> /* uint_least32_t, uint_fast8_t, uintmax_t, int_fast8_t */
 
 #include "mga.h" /* github.com/a-p-jo/darc/blob/main/mga/mga.h */
 MGA_IMPL(str, char) /* Dynamic string */
 
 /* Number of seconds in a year, month, week, day, hour, minute and second */
-static const unsigned S_VALS[] = {31557600,2629800,604800,86400,3600,60,1};
+static const uint_least32_t S_VALS[] = {31557600,2629800,604800,86400,3600,60,1};
 static const char S_SFXS[] = {'y', 'M', 'w', 'd', 'h', 'm', 's'};
 
 #define LEN(x) (sizeof(x)/sizeof(x[0]))
@@ -24,7 +24,7 @@ static const char S_SFXS[] = {'y', 'M', 'w', 'd', 'h', 'm', 's'};
 static bool s_tostr(long double s, str *dst)
 {
         dst->len = 0; 
-        for (size_t i = 0; i < LEN(S_VALS)-1; i++) {
+        for (uint_fast8_t i = 0; i < LEN(S_VALS)-1; i++) {
                 uintmax_t x = s/S_VALS[i]; s = fmodl(s, S_VALS[i]);
                 if (x) {
                         /* Determine space needed to print to dst */
@@ -44,9 +44,9 @@ static bool s_tostr(long double s, str *dst)
 }
 
 /* If c is in S_SFXS, return its index, else return -1 */
-static inline int isfx(char c)
+static inline int_fast8_t isfx(char c)
 {
-        for (size_t i = 0; i < LEN(S_SFXS); i++)
+        for (uint_fast8_t i = 0; i < LEN(S_SFXS); i++)
                 if (c == S_SFXS[i])
                         return i;
         return -1;
@@ -57,7 +57,7 @@ static long double s_frmstr(const char *restrict src, size_t len)
 {
         long double s = 0;
         while (len-->0) { /* As unit is designated by suffix, iterate backwards */
-                int ci = isfx(src[len]);
+                int_fast8_t ci = isfx(src[len]);
                 if (ci < 0) /* Non-suffix char, input is invalid */
                         return NAN;
                 else {
@@ -99,3 +99,4 @@ int main(int argc, char **argv)
                 fprintf(stderr, "Error : Incorrect argument(s).\nUsage : %s <time>\n", argv[0]);
         return ret;
 }
+
