@@ -1,7 +1,7 @@
 #include <math.h>   /* NAN, fmodl(), isfinite(), isnan() */
 #include <stdio.h>  /* stderr, snprintf(), fprintf(), printf() */
 #include <errno.h>  /* errno, ERANGE */
-#include <stdlib.h> /* exit(), EXIT_FAILURE, EXIT_SUCCESS */
+#include <stdlib.h> /* exit(), EXIT_FAILURE, EXIT_SUCCESS, realloc(), free() */
 #include <stdint.h> /* uint_least32_t, uint_fast8_t, uintmax_t, int_fast8_t */
 
 #include "mga.h" /* github.com/a-p-jo/darc/blob/main/mga/mga.h */
@@ -88,7 +88,7 @@ int main(int argc, char **argv)
                 } else if (!isfinite(s) || errno == ERANGE)
                         fprintf(stderr, "Error : Argument out of valid range.\n");
                 else { /* Is numerical, convert seconds to time units */
-                        str buf = {0};
+                        str buf = {.realloc = realloc, .free = free};
                         if (!s_tostr(s, &buf))
                                 fprintf(stderr, "Error : Couldn't convert.\n");
                         else
