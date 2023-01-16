@@ -9,23 +9,34 @@
 #include "sbomga.h" /* github.com/a-p-jo/darc/blob/main/sbomga/sbomga.h */
 SBOMGA_IMPL(str, realloc, free, 0, char) /* Dynamic SSO string */
 
+#include "config.h" /* Exports SELECTED year type */
+
+/* Converts selected year type to seconds. */
+#define SECS_IN_YR ((long double) {         \
+	((long double[]) {                  \
+		31536000, 31622400,         \
+		31557600, 31556952,         \
+		31556925.216, 31558149.7635 \
+	})[SELECTED]                        \
+})
+
 typedef struct tm_unit {
-	uint_least32_t secs;
+	long double secs;
 	char sfx;
 } tm_unit;
 
-#define TM_UNITS ( (tm_unit[]) { \
-	{31557600, 'y'},         \
-	{2629800 , 'M'},         \
-	{604800  , 'w'},         \
-	{86400   , 'd'},         \
-	{3600    , 'h'},         \
-	{60      , 'm'},         \
-	{1       , 's'}          \
+#define TM_UNITS ((tm_unit[]) {             \
+	{SECS_IN_YR   , 'y'},               \
+	{SECS_IN_YR/12, 'M'},               \
+	{604800       , 'w'},               \
+	{86400        , 'd'},               \
+	{3600         , 'h'},               \
+	{60           , 'm'},               \
+	{1            , 's'}                \
 })
 
-#define LEN(x) ( (size_t) {    \
-	sizeof(x)/sizeof(x[0]) \
+#define LEN(x) ((size_t) {                  \
+	sizeof(x)/sizeof(x[0])              \
 })
 
 /* s2str() format flag bits: Bit i corresponds to TM_UNITS[i]. */
@@ -36,13 +47,13 @@ typedef uint_least8_t fmtflags;
 /* X is a fmtflags rvalue. 
  * N is an integer rvalue and N < bits in fmtflags
  */
-#define fmtflags_GET(X, N) ( (bool) {           \
+#define fmtflags_GET(X, N) ((bool) {            \
 	(X) &  (1 << (N))                       \
 })
-#define fmtflags_SET(X, N) ( (fmtflags) {       \
+#define fmtflags_SET(X, N) ((fmtflags) {        \
 	(X) |  (1 << (N))                       \
 })
-#define fmtflags_ANYSETAFTER(X, N) ( (bool) {   \
+#define fmtflags_ANYSETAFTER(X, N) ((bool) {    \
 	/* EXPLANATION:
 	 * Say the low 7 bits of x are 0010100.
 	 * We want to check if any bits after the 3rd bit are set (n=2).
