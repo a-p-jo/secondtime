@@ -1,4 +1,4 @@
-# `secondtime` v2.0
+# `secondtime` v2.1
 
 The metric system and SI units are wonderfully simple and used everywhere
 for the convenience they offer. Except to measure time, which is measured
@@ -63,3 +63,5 @@ Help  : This program lets you use seconds as your unit of time.
 
             (1.5 x 10^6 seconds)
 ```
+
+**NOTE:** By default, a year means a gregorian year (365.2425 days); a month means 1/12th of that year. You can configure the year type in `config.h`.
