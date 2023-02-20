@@ -25,21 +25,21 @@ typedef struct tm_unit {
 	char sfx;
 } tm_unit;
 
-#define TM_UNITS ((tm_unit[]) {             \
-	{SECS_IN_YR   , 'y'},               \
-	{SECS_IN_YR/12, 'M'},               \
-	{604800       , 'w'},               \
-	{86400        , 'd'},               \
-	{3600         , 'h'},               \
-	{60           , 'm'},               \
-	{1            , 's'}                \
-})
+static const tm_unit tm_units[] = {
+	{SECS_IN_YR   , 'y'},
+	{SECS_IN_YR/12, 'M'},
+	{604800       , 'w'},
+	{86400        , 'd'},
+	{3600         , 'h'},
+	{60           , 'm'},
+	{1            , 's'}
+};
 
 #define LEN(x) ((size_t) {                  \
 	sizeof(x)/sizeof(x[0])              \
 })
 
-/* s2str() format flag bits: Bit i corresponds to TM_UNITS[i]. */
+/* s2str() format flag bits: Bit i corresponds to tm_units[i]. */
 typedef uint_least8_t fmtflags;
 #define fmtflags_ALL0 (       (fmtflags) {0}        )
 #define fmtflags_ALL1 ( (fmtflags) {~fmtflags_ALL0} )
@@ -71,7 +71,7 @@ typedef uint_least8_t fmtflags;
 
 /* Convert s seconds to str in specified format.
  *
- * If bit i of format is set, the TM_UNITS[i] unit is converted to,
+ * If bit i of format is set, the tm_units[i] unit is converted to,
  * else not. 
  * Conversion begins with the largest unit,
  * converting the seconds to the greatest natural number of units,
@@ -88,13 +88,13 @@ static bool s2str(long double s, fmtflags format, str *dst)
 	dst->len = 0;
 	bool atleastone = false;
 
-	for (uint_fast8_t i = 0; i < LEN(TM_UNITS); i++) {
+	for (uint_fast8_t i = 0; i < LEN(tm_units); i++) {
 		if (!fmtflags_GET(format, i))
 			continue; /* Ignore this unit */
 
 		if (fmtflags_ANYSETAFTER(format, i)) {
-			uintmax_t x = s/TM_UNITS[i].secs; /* truncates */
-			s = fmodl(s, TM_UNITS[i].secs);
+			uintmax_t x = s/tm_units[i].secs; /* truncates */
+			s = fmodl(s, tm_units[i].secs);
 			if (x) {
 				atleastone = true;
 
@@ -103,21 +103,21 @@ static bool s2str(long double s, fmtflags format, str *dst)
 				int n = snprintf(                          \
 						NULL, 0,                   \
 						(fmtstr),                  \
-						x, TM_UNITS[i].sfx         \
+						x, tm_units[i].sfx         \
 				) + 1;                                     \
 				if (n < 0 || !str_reserve(dst,dst->len+n)) \
 					return false;                      \
 				/* Write to dst and update it's length */  \
 				dst->len += sprintf(                       \
 					str_arr(dst)+dst->len, (fmtstr),   \
-					x, TM_UNITS[i].sfx                 \
+					x, tm_units[i].sfx                 \
 				);                                         \
 				} while (0)
 
 				WRITE_UNIT("%ju%c ");
 			}
 		} else { /* This is the last unit, convert to fractional. */
-			long double x = s/TM_UNITS[i].secs;
+			long double x = s/tm_units[i].secs;
 			/* If x is 0, write iff no units previously written */
 			if (fpclassify(x) == FP_ZERO && atleastone)
 				break;
@@ -130,11 +130,11 @@ static bool s2str(long double s, fmtflags format, str *dst)
 	return true;
 }
 
-/* If c is a suffix in TM_UNITS, return its index, else return -1 */
+/* If c is a suffix in tm_units, return its index, else return -1 */
 static inline int_fast8_t isfx(char c)
 {
-	for (uint_fast8_t i = 0; i < LEN(TM_UNITS); i++)
-		if (c == TM_UNITS[i].sfx)
+	for (uint_fast8_t i = 0; i < LEN(tm_units); i++)
+		if (c == tm_units[i].sfx)
 			return i;
 	return -1;
 }
@@ -155,7 +155,7 @@ static long double str2s(const char *restrict src, size_t len)
 				len--;
 			char *ep;
 			/* Convert units to seconds and inc s */
-			s += strtold(src+len, &ep) * TM_UNITS[ci].secs;
+			s += strtold(src+len, &ep) * tm_units[ci].secs;
 			if (
 				ep != cp || signbit(s) 
 				|| !isfinite(s) || errno == ERANGE

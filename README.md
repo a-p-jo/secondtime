@@ -1,4 +1,4 @@
-# `secondtime` v2.1
+# `secondtime` v2.2
 
 The metric system and SI units are wonderfully simple and used everywhere
 for the convenience they offer. Except to measure time, which is measured
