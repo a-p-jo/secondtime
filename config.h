@@ -4,13 +4,13 @@
 /* Select a year type. Recompile to update. */
 enum {
 	/* The usual - 365, 366 days */
-	NORMAL, LEAP,
+	NORMAL_YEAR, LEAP_YEAR,
 	/* Calendar years */
-	JULIAN, GREGORIAN,
+	JULIAN_YEAR, GREGORIAN_YEAR,
 	/* Astronomical years */
-	TROPICAL, SIDEREAL,
+	TROPICAL_YEAR, SIDEREAL_YEAR,
 	/* Select any of the above */
-	SELECTED = GREGORIAN
+	SELECTED_YEAR = GREGORIAN_YEAR
 };
 
 #endif

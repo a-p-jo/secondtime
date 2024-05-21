@@ -11,14 +11,15 @@ SBOMGA_IMPL(str, realloc, free, 0, char) /* Dynamic SSO string */
 
 #include "config.h" /* Exports SELECTED year type */
 
-/* Converts selected year type to seconds. */
-#define SECS_IN_YR ((long double) {         \
-	((long double[]) {                  \
-		31536000, 31622400,         \
-		31557600, 31556952,         \
-		31556925.216, 31558149.7635 \
-	})[SELECTED]                        \
-})
+#define SECS_IN_YR (                                     \
+	SELECTED_YEAR == NORMAL_YEAR   ? 31536000L      :\
+	SELECTED_YEAR == LEAP_YEAR     ? 31622400L      :\
+	SELECTED_YEAR == JULIAN_YEAR   ? 31557600L      :\
+	SELECTED_YEAR == GREGORIAN_YEAR? 3155695L       :\
+	SELECTED_YEAR == TROPICAL_YEAR ? 31556925.216L  :\
+	SELECTED_YEAR == SIDEREAL_YEAR ? 31558149.7635L :\
+	NAN                                              \
+)
 
 typedef struct tm_unit {
 	long double secs;
@@ -35,9 +36,7 @@ static const tm_unit tm_units[] = {
 	{1            , 's'}
 };
 
-#define LEN(x) ((size_t) {                  \
-	sizeof(x)/sizeof(x[0])              \
-})
+#define LEN(x) (sizeof(x)/sizeof(x[0]))
 
 /* s2str() format flag bits: Bit i corresponds to tm_units[i]. */
 typedef uint_least8_t fmtflags;
@@ -47,13 +46,13 @@ typedef uint_least8_t fmtflags;
 /* X is a fmtflags rvalue. 
  * N is an integer rvalue and N < bits in fmtflags
  */
-#define fmtflags_GET(X, N) ((bool) {            \
+#define fmtflags_GET(X, N) ((bool) (            \
 	(X) &  (1 << (N))                       \
-})
+))
 #define fmtflags_SET(X, N) ((fmtflags) {        \
 	(X) |  (1 << (N))                       \
 })
-#define fmtflags_ANYSETAFTER(X, N) ((bool) {    \
+#define fmtflags_ANYSETAFTER(X, N) ((bool) (    \
 	/* EXPLANATION:
 	 * Say the low 7 bits of x are 0010100.
 	 * We want to check if any bits after the 3rd bit are set (n=2).
@@ -67,7 +66,7 @@ typedef uint_least8_t fmtflags;
 	 * will evaluate to true when converted to bool.
 	 */                                     \
 	(X) & ~((1 << ((N)+1)) - 1)             \
-})
+))
 
 /* Convert s seconds to str in specified format.
  *
@@ -154,11 +153,13 @@ static long double str2s(const char *restrict src, size_t len)
 			while (len && isfx(src[len-1]) < 0)
 				len--;
 			char *ep;
+			int olderrno = errno; errno = 0;
 			/* Convert units to seconds and inc s */
 			s += strtold(src+len, &ep) * tm_units[ci].secs;
+			int newerrno = errno; errno = olderrno;
 			if (
 				ep != cp || signbit(s) 
-				|| !isfinite(s) || errno == ERANGE
+				|| !isfinite(s) || newerrno == ERANGE
 			)
 				return NAN;
 		}
