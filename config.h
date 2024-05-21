@@ -1,16 +1,17 @@
 #ifndef SECONDTIME_CONFIG_H
 #define SECONDTIME_CONFIG_H
 
-/* Select a year type. Recompile to update. */
-enum {
-	/* The usual - 365, 366 days */
-	NORMAL_YEAR, LEAP_YEAR,
-	/* Calendar years */
-	JULIAN_YEAR, GREGORIAN_YEAR,
-	/* Astronomical years */
-	TROPICAL_YEAR, SIDEREAL_YEAR,
-	/* Select any of the above */
-	SELECTED_YEAR = GREGORIAN_YEAR
-};
+/* The usual - 365, 366 days */
+#define NORMAL_YEAR    0
+#define LEAP_YEAR      1
+/* Calendar years */
+#define JULIAN_YEAR    2
+#define GREGORIAN_YEAR 3
+/* Astronomical years */
+#define TROPICAL_YEAR  4
+#define SIDEREAL_YEAR  5
+
+/* Select any of the above */
+#define SELECTED_YEAR GREGORIAN_YEAR
 
 #endif

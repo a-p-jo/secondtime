@@ -11,15 +11,21 @@ SBOMGA_IMPL(str, realloc, free, 0, char) /* Dynamic SSO string */
 
 #include "config.h" /* Exports SELECTED year type */
 
-#define SECS_IN_YR (                                     \
-	SELECTED_YEAR == NORMAL_YEAR   ? 31536000L      :\
-	SELECTED_YEAR == LEAP_YEAR     ? 31622400L      :\
-	SELECTED_YEAR == JULIAN_YEAR   ? 31557600L      :\
-	SELECTED_YEAR == GREGORIAN_YEAR? 3155695L       :\
-	SELECTED_YEAR == TROPICAL_YEAR ? 31556925.216L  :\
-	SELECTED_YEAR == SIDEREAL_YEAR ? 31558149.7635L :\
-	NAN                                              \
-)
+#if SELECTED_YEAR == NORMAL_YEAR
+#define SECS_IN_YR 31536000.0L
+#elif SELECTED_YEAR == LEAP_YEAR
+#define SECS_IN_YR 31622400.0L
+#elif SELECTED_YEAR == JULIAN_YEAR
+#define SECS_IN_YR 31557600.0L
+#elif SELECTED_YEAR == GREGORIAN_YEAR
+#define SECS_IN_YR 3155695.0L
+#elif SELECTED_YEAR == TROPICAL_YEAR
+#define SECS_IN_YR 31556925.216L
+#elif SELECTED_YEAR == SIDEREAL_YEAR
+#define SECS_IN_YR 31558149.7635L
+#else
+#error "Invalid value for SELECTED_YEAR in config.h"
+#endif
 
 typedef struct tm_unit {
 	long double secs;
@@ -115,13 +121,13 @@ static bool s2str(long double s, fmtflags format, str *dst)
 
 				WRITE_UNIT("%ju%c ");
 			}
-		} else { /* This is the last unit, convert to fractional. */
+		} else { /* This is the last unit, convert to fractional.   */
 			long double x = s/tm_units[i].secs;
 			/* If x is 0, write iff no units previously written */
 			if (fpclassify(x) == FP_ZERO && atleastone)
 				break;
 			else
-			/* https://stackoverflow.com/a/54162153/13651625 */
+			/* https://stackoverflow.com/a/54162153/13651625    */
 				WRITE_UNIT("%Lg%c");
 			#undef WRITE_UNIT	
 		}
