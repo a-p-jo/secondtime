@@ -1,4 +1,5 @@
 #include <math.h>   /* NAN, fmodl, isfinite, isnan */
+#include <float.h>  /* LDBL_DIG */
 #include <stdio.h>  /* stderr, snprintf, sprintf, fprintf, printf */
 #include <errno.h>  /* errno, ERANGE */
 #include <stdlib.h> /* exit, EXIT_FAILURE, EXIT_SUCCESS, realloc, free */
@@ -9,7 +10,7 @@
 #include "sbomga.h" /* github.com/a-p-jo/darc/blob/main/sbomga/sbomga.h */
 SBOMGA_IMPL(str, realloc, free, 0, char) /* Dynamic SSO string */
 
-#include "config.h" /* Exports SELECTED year type */
+#include "config.h" /* Exports SELECTED_YEAR, year types, LDBL_FMT */
 
 #if SELECTED_YEAR == NORMAL_YEAR
 #define SECS_IN_YR 31536000.0L
@@ -18,7 +19,7 @@ SBOMGA_IMPL(str, realloc, free, 0, char) /* Dynamic SSO string */
 #elif SELECTED_YEAR == JULIAN_YEAR
 #define SECS_IN_YR 31557600.0L
 #elif SELECTED_YEAR == GREGORIAN_YEAR
-#define SECS_IN_YR 3155695.0L
+#define SECS_IN_YR 31556952.0L
 #elif SELECTED_YEAR == TROPICAL_YEAR
 #define SECS_IN_YR 31556925.216L
 #elif SELECTED_YEAR == SIDEREAL_YEAR
@@ -41,8 +42,6 @@ static const tm_unit tm_units[] = {
 	{60           , 'm'},
 	{1            , 's'}
 };
-
-#define LEN(x) (sizeof(x)/sizeof(x[0]))
 
 /* s2str() format flag bits: Bit i corresponds to tm_units[i]. */
 typedef uint_least8_t fmtflags;
@@ -74,6 +73,23 @@ typedef uint_least8_t fmtflags;
 	(X) & ~((1 << ((N)+1)) - 1)             \
 ))
 
+#define LEN(x) (sizeof(x)/sizeof(x[0]))
+
+/* https://stackoverflow.com/a/24487623 */
+#define STUPID_TOSTR(X) #X
+#define TOSTR(X) STUPID_TOSTR(X)
+
+/* About %g: https://stackoverflow.com/a/54162153/13651625
+ * About DECIMAL_DIG: https://stackoverflow.com/a/19897395
+ */
+#if HOW_TO_PRINT_FLOATS == READABLY_PRINT_FLOATS
+#define LDBL_FMTSPEC "%Lg"
+#elif HOW_TO_PRINT_FLOATS == ACCURATELY_PRINT_FLOATS
+#define LDBL_FMTSPEC "%."TOSTR(DECIMAL_DIG)"Lg"
+#else
+#error "Invalid value for HOW_TO_PRINT_FLOATS in config.h" 
+#endif
+
 /* Convert s seconds to str in specified format.
  *
  * If bit i of format is set, the tm_units[i] unit is converted to,
@@ -100,6 +116,7 @@ static bool s2str(long double s, fmtflags format, str *dst)
 		if (fmtflags_ANYSETAFTER(format, i)) {
 			uintmax_t x = s/tm_units[i].secs; /* truncates */
 			s = fmodl(s, tm_units[i].secs);
+
 			if (x) {
 				atleastone = true;
 
@@ -127,8 +144,7 @@ static bool s2str(long double s, fmtflags format, str *dst)
 			if (fpclassify(x) == FP_ZERO && atleastone)
 				break;
 			else
-			/* https://stackoverflow.com/a/54162153/13651625    */
-				WRITE_UNIT("%Lg%c");
+				WRITE_UNIT(LDBL_FMTSPEC"%c");
 			#undef WRITE_UNIT	
 		}
 	}
@@ -151,7 +167,7 @@ static long double str2s(const char *restrict src, size_t len)
 	/* As unit is designated by suffix, iterate backwards */
 	while (len --> 0) {
 		int_fast8_t ci = isfx(src[len]);
-		if (ci < 0) /* Non-suffix is last char, input is invalid */
+		if (ci < 0) /* prev char is non-suffix, input is invalid */
 			return NAN;
 		else {
 			const char *restrict cp = src+len;
@@ -175,7 +191,7 @@ static long double str2s(const char *restrict src, size_t len)
 
 /* Converts cstring to fmtflags, ignoring whitespace
  * but disallowing other non-suffix chars.
- * If s is NULL, enable all.
+ * If src is NULL, enable all.
  */
 static bool str2fmtflags(fmtflags *dst, const char *restrict src)
 {
@@ -214,7 +230,7 @@ int main(int argc, char **argv)
 			if (isnan(s))
 				fprintf(stderr, "Error: Invalid argument.\n");
 			else {
-				printf("%Lgs\n", s);
+				printf(LDBL_FMTSPEC"s\n", s);
 				ret = EXIT_SUCCESS;
 			}
 		} else if (signbit(s) || !isfinite(s) || errno == ERANGE)
