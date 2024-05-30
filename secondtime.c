@@ -1,5 +1,5 @@
 #include <math.h>   /* NAN, fmodl, isfinite, isnan */
-#include <float.h>  /* LDBL_DIG */
+#include <float.h>  /* DECIMAL_DIG */
 #include <stdio.h>  /* stderr, snprintf, sprintf, fprintf, printf */
 #include <errno.h>  /* errno, ERANGE */
 #include <stdlib.h> /* exit, EXIT_FAILURE, EXIT_SUCCESS, realloc, free */
@@ -10,7 +10,7 @@
 #include "sbomga.h" /* github.com/a-p-jo/darc/blob/main/sbomga/sbomga.h */
 SBOMGA_IMPL(str, realloc, free, 0, char) /* Dynamic SSO string */
 
-#include "config.h" /* Exports SELECTED_YEAR, year types, LDBL_FMT */
+#include "config.h" /* Exports SELECTED_YEAR, HOW_TO_PRINT_FLOATS */
 
 #if SELECTED_YEAR == NORMAL_YEAR
 #define SECS_IN_YR 31536000.0L
