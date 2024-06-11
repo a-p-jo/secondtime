@@ -45,33 +45,36 @@ static const tm_unit tm_units[] = {
 
 /* s2str() format flag bits: Bit i corresponds to tm_units[i]. */
 typedef uint_least8_t fmtflags;
-#define fmtflags_ALL0 (       (fmtflags) {0}        )
-#define fmtflags_ALL1 ( (fmtflags) {~fmtflags_ALL0} )
+static const fmtflags fmtflags_all0 = 0;
+static const fmtflags fmtflags_all1 = ~fmtflags_all0;
 
-/* X is a fmtflags rvalue. 
- * N is an integer rvalue and N < bits in fmtflags
- */
-#define fmtflags_GET(X, N) ((bool) (            \
-	(X) &  (1 << (N))                       \
-))
-#define fmtflags_SET(X, N) ((fmtflags) {        \
-	(X) |  (1 << (N))                       \
-})
-#define fmtflags_ANYSETAFTER(X, N) ((bool) (    \
+/* i < bits in fmtflags */
+static inline bool fmtflags_get(fmtflags x, uint_fast8_t i)
+{
+	return x & (1 << i);
+}
+/* x is never NULL */
+static inline void fmtflags_set(fmtflags *x, uint_fast8_t i)
+{
+	*x = *x | (1 << i);
+}
+static inline bool fmtflags_anysetafter(fmtflags x, uint_fast8_t i)
+{
 	/* EXPLANATION:
 	 * Say the low 7 bits of x are 0010100.
-	 * We want to check if any bits after the 3rd bit are set (n=2).
+	 * We want to check if any bits after the 3rd bit are set (i=2).
 	 * (1 << 3) gives 0001000.
 	 * (1 << 3)-1 gives 0000111.
 	 * ~((1 << 3)-1) gives 1111000.
 	 * when we bitwise AND this with x:
-	 * All bits until (and including) n are set to 0 (1&0 = 0, 0&0 = 0).
+	 * All bits until (and including) i are set to 0 (1&0 = 0, 0&0 = 0).
 	 * All bits thereafter are unchanged because (0&1 = 0, 1&1 = 1).
-	 * The resulting value, if any bits were after n were set,
+	 * The resulting value, if any bits were after i were set,
 	 * will evaluate to true when converted to bool.
-	 */                                     \
-	(X) & ~((1 << ((N)+1)) - 1)             \
-))
+	 */
+	return x & ~((1 << (i+1)) - 1);
+	
+}
 
 #define LEN(x) (sizeof(x)/sizeof(x[0]))
 
@@ -110,10 +113,10 @@ static bool s2str(long double s, fmtflags format, str *dst)
 	bool atleastone = false;
 
 	for (uint_fast8_t i = 0; i < LEN(tm_units); i++) {
-		if (!fmtflags_GET(format, i))
+		if (!fmtflags_get(format, i))
 			continue; /* Ignore this unit */
 
-		if (fmtflags_ANYSETAFTER(format, i)) {
+		if (fmtflags_anysetafter(format, i)) {
 			uintmax_t x = s/tm_units[i].secs; /* truncates */
 			s = fmodl(s, tm_units[i].secs);
 
@@ -196,11 +199,11 @@ static long double str2s(const char *restrict src, size_t len)
 static bool str2fmtflags(fmtflags *dst, const char *restrict src)
 {
 	if (!src) {
-		*dst = fmtflags_ALL1;
+		*dst = fmtflags_all1;
 		return true;
 	}
 	
-	*dst = fmtflags_ALL0;
+	*dst = fmtflags_all0;
 	for (char c; (c = *src); src++) {
 		if (isspace(c))
 			continue;
@@ -209,7 +212,7 @@ static bool str2fmtflags(fmtflags *dst, const char *restrict src)
 		if (i < 0)
 			return false;
 		else
-			*dst = fmtflags_SET(*dst, i);
+			fmtflags_set(dst, i);
 	}
 	return true;
 }
